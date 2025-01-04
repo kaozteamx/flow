@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flow Timer</title>
+    <style>
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f3f4f6;
+            --text-primary: #111827;
+            --text-secondary: #4b5563;
+            --button-start: rgba(16, 185, 129, 0.9);
+            --button-pause: rgba(239, 68, 68, 0.9);
+            --button-reset: rgba(59, 130, 246, 0.9);
+            --button-extend: rgba(249, 115, 22, 0.9);
+            --border-color: rgba(0, 0, 0, 0.1);
+            --input-bg: #ffffff;
+        }
+
+        .dark {
+            --bg-primary: #111827;
+            --bg-secondary: rgba(255, 255, 255, 0.05);
+            --text-primary: #ffffff;
+            --text-secondary: #9CA3AF;
+            --button-start: rgba(16, 185, 129, 0.8);
+            --button-pause: rgba(239, 68, 68, 0.8);
+            --button-reset: rgba(59, 130, 246, 0.8);
+            --button-extend: rgba(249, 115, 22, 0.8);
+            --border-color: rgba(255, 255, 255, 0.1);
+            --input-bg: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .theme-switch {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            z-index: 1000;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 52px;
+            height: 26px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--bg-secondary);
+            transition: 0.4s;
+            border-radius: 34px;
+            border: 1px solid var(--border-color);
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 2px;
+            background-color: var(--text-primary);
+            transition: 0.4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        .theme-icon {
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .timer {
+            font-size: 8rem;
+            font-weight: 200;
+            text-align: center;
+            margin: 1rem 0;
+            font-variant-numeric: tabular-nums;
+            line-height: 1;
+            color: var(--text-primary);
+            transition: color 0.3s ease;
+        }
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+        }
+
+        button {
+            padding: 1rem;
+            font-size: 1rem;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-weight: 500;
+            color: #fff;
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border-color);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            filter: brightness(1.1);
+        }
+
+        button:active {
+            transform: translateY(0px);
+        }
+
+        .start { background: var(--button-start); }
+        .pause { background: var(--button-pause); }
+        .reset { background: var(--button-reset); }
+        .extend { background: var(--button-extend); }
+
+        .settings {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            background: var(--bg-secondary);
+            padding: 1.5rem;
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border-color);
+        }
+
+        .settings label {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .settings input[type="number"] {
+            background: var(--input-bg);
+            border: 1px solid var(--border-color);
+            padding: 0.75rem;
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 1rem;
+            width: 100%;
+        }
+
+        .settings input[type="number"]:focus {
+            outline: none;
+            border-color: rgba(59, 130, 246, 0.5);
+        }
+
+        .checkbox-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .checkbox-wrapper input[type="checkbox"] {
+            width: 1.2rem;
+            height: 1.2rem;
+            accent-color: #10B981;
+        }
+
+        .cycles {
+            font-size: 1.25rem;
+            text-align: center;
+            color: #10B981;
+            font-weight: 500;
+        }
+
+        .history {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 1.5rem;
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border-color);
+        }
+        .history-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .action-btn {
+            background: none;
+            padding: 0.5rem;
+            border: none;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .action-btn:hover {
+            opacity: 0.8;
+        }
+
+        .export-btn {
+            color: var(--text-secondary);
+        }
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .history-title {
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        #clearAllBtn {
+            background: none;
+            padding: 0.5rem;
+            color: #EF4444;
+            border: none;
+            font-size: 0.9rem;
+        }
+
+        #historyList {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            max-height: 200px;
+            overflow-y: auto;
+            padding-right: 0.5rem;
+        }
+
+        #historyList::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        #historyList::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+        }
+
+        #historyList::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+        }
+
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .history-item button {
+            padding: 0.25rem;
+            font-size: 1rem;
+            color: #EF4444;
+            background: none;
+            border: none;
+        }
+
+        @media (max-width: 640px) {
+            .container {
+                padding: 1rem;
+            }
+            .timer {
+                font-size: 5rem;
+            }
+            .controls {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="theme-switch">
+        <span class="theme-icon">☀️</span>
+        <label class="switch">
+            <input type="checkbox" id="themeToggle" checked>
+            <span class="slider"></span>
+        </label>
+        <span class="theme-icon">🌙</span>
+    </div>
+
+    <div class="container">
+        <div id="timer" class="timer">52:00</div>
+        <div class="controls">
+            <button id="startBtn" class="start">Iniciar</button>
+            <button id="pauseBtn" class="pause">Pausar/Reanudar</button>
+            <button id="resetBtn" class="reset">Reiniciar</button>
+            <button id="extendBtn" class="extend">Extender +5 min</button>
+        </div>
+        <div class="settings">
+            <label>
+                Duración del flujo (minutos):
+                <input type="number" id="workDuration" value="52">
+            </label>
+            <label>
+                Duración de la pausa (minutos):
+                <input type="number" id="pauseDuration" value="17">
+            </label>
+            <div class="checkbox-wrapper">
+                <input type="checkbox" id="autoStartPause" checked>
+                <label for="autoStartPause">Iniciar automáticamente la pausa tras terminar el flujo</label>
+            </div>
+        </div>
+        <div id="cycleCounter" class="cycles">Ciclos completados: 0</div>
+        <div class="history">
+            <div class="history-header">
+                <span class="history-title">Historial de ciclos</span>
+                <div class="history-buttons">
+                    <button id="exportBtn" class="action-btn export-btn">📊 Exportar CSV</button>
+                    <button id="clearAllBtn" class="action-btn">🗑️ Eliminar todo</button>
+                </div>
+            </div>
+            <ul id="historyList"></ul>
+        </div>
+    </div>
+
+    <audio id="alertSound" src="https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3"></audio>
+    <script>
+        let timerInterval;
+        let timeLeft = 52 * 60;
+        let isPaused = false;
+        let isWorkPhase = true;
+        let cyclesCompleted = 0;
+        let lastWorkDuration = 0;
+        let lastPauseDuration = 0;
+
+        const timerDisplay = document.getElementById("timer");
+        const startBtn = document.getElementById("startBtn");
+        const pauseBtn = document.getElementById("pauseBtn");
+        const resetBtn = document.getElementById("resetBtn");
+        const extendBtn = document.getElementById("extendBtn");
+        const workDurationInput = document.getElementById("workDuration");
+        const pauseDurationInput = document.getElementById("pauseDuration");
+        const autoStartPauseCheckbox = document.getElementById("autoStartPause");
+        const alertSound = document.getElementById("alertSound");
+        const cycleCounter = document.getElementById("cycleCounter");
+        const historyList = document.getElementById("historyList");
+        const clearAllBtn = document.getElementById("clearAllBtn");
+        const themeToggle = document.getElementById('themeToggle');
+        const exportBtn = document.getElementById("exportBtn");
+
+        // Theme Toggle Logic
+        if (localStorage.getItem('theme') === 'light') {
+            document.documentElement.classList.remove('dark');
+            themeToggle.checked = false;
+        }
+
+        themeToggle.addEventListener('change', function() {
+            if (this.checked) {
+                document.documentElement.classList.add('dark');
+                localStorage.setItem('theme', 'dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+                localStorage.setItem('theme', 'light');
+            }
+        });
+
+        function updateDisplay() {
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            const displayTime = String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
+            
+            // Actualizar el display del timer
+            timerDisplay.textContent = displayTime;
+            
+            // Actualizar el título de la página
+            document.title = isWorkPhase ? 
+                `${displayTime} - Flujo` : 
+                `${displayTime} - Pausa`;
+        }
+
+        function startTimer() {
+            if (timerInterval) return;
+            if (isPaused) {
+                isPaused = false;
+            } else if (isWorkPhase) {
+                timeLeft = parseInt(workDurationInput.value) * 60;
+                lastWorkDuration = timeLeft;
+            } else {
+                timeLeft = parseInt(pauseDurationInput.value) * 60;
+                lastPauseDuration = timeLeft;
+                timerDisplay.style.color = '#FFD700';
+            }
+            timerInterval = setInterval(() => {
+                if (timeLeft > 0) {
+                    timeLeft--;
+                    updateDisplay();
+                } else {
+                    clearInterval(timerInterval);
+                    timerInterval = null;
+                    if (isWorkPhase) {
+                        handleWorkPhaseEnd();
+                    } else {
+                        handlePausePhaseEnd();
+                    }
+                }
+            }, 1000);
+        }
+
+        function handleWorkPhaseEnd() {
+            alertSound.play();
+            isWorkPhase = false;
+            clearInterval(timerInterval);
+            timerInterval = null;
+            
+            timeLeft = parseInt(pauseDurationInput.value) * 60;
+            lastPauseDuration = timeLeft;
+            timerDisplay.style.color = '#FFD700';
+            updateDisplay();
+
+            if (autoStartPauseCheckbox.checked) {
+                startTimer();
+            }
+        }
+
+        function handlePausePhaseEnd() {
+            // Primero aseguramos que suene la alarma
+            alertSound.play();
+
+            // Reiniciamos el estado del timer inmediatamente
+            isWorkPhase = true;
+            isPaused = false;
+            clearInterval(timerInterval);
+            timerInterval = null;
+            timeLeft = parseInt(workDurationInput.value) * 60;
+            timerDisplay.style.color = '';
+            updateDisplay();
+
+            // Registramos el ciclo con un proceso separado
+            setTimeout(askForCycleDescription, 1000);
+        }
+
+        function incrementCycleCounter() {
+            cyclesCompleted++;
+            updateCycleCounter();
+        }
+
+        function updateCycleCounter() {
+            cyclesCompleted = historyList.children.length;
+            cycleCounter.textContent = `Ciclos completados: ${cyclesCompleted}`;
+        }
+        
+        function askForCycleDescription() {
+            const descripcion = prompt("Ingresa una descripción para este ciclo:", "Sesión");
+            if (descripcion === null) return; // Si el usuario cancela, no registramos el ciclo
+            
+            const textoFinal = descripcion || "Ciclo";
+            
+            const li = document.createElement("li");
+            const now = new Date();
+            const formattedDate = now.toLocaleDateString("es-ES");
+            const formattedTime = now.toLocaleTimeString("es-ES", { hour12: false });
+            const workMinutes = Math.floor(lastWorkDuration / 60);
+            const pauseMinutes = Math.floor(lastPauseDuration / 60);
+            li.classList.add("history-item");
+            li.innerHTML = `
+                ${textoFinal} (${formattedDate} ${formattedTime}): Flujo ${workMinutes} min, Pausa ${pauseMinutes} min
+                <button onclick="deleteCycle(this)">🗑️</button>
+            `;
+            historyList.appendChild(li);
+            saveHistoryToLocalStorage();
+            updateCycleCounter();
+        }
+        
+        function logCycle() {
+            // Pedimos la descripción al usuario
+            const descripcion = prompt("Ingresa una descripción para este ciclo:", "Sesión");
+            if (descripcion === null) return; // Si el usuario cancela, no registramos el ciclo
+            
+            const textoFinal = descripcion || "Ciclo";
+            
+            const li = document.createElement("li");
+            const now = new Date();
+            const formattedDate = now.toLocaleDateString("es-ES");
+            const formattedTime = now.toLocaleTimeString("es-ES", { hour12: false });
+            const workMinutes = Math.floor(lastWorkDuration / 60);
+            const pauseMinutes = Math.floor(lastPauseDuration / 60);
+            li.classList.add("history-item");
+            li.innerHTML = `
+                ${textoFinal} (${formattedDate} ${formattedTime}): Flujo ${workMinutes} min, Pausa ${pauseMinutes} min
+                <button onclick="deleteCycle(this)">🗑️</button>
+            `;
+            historyList.appendChild(li);
+            saveHistoryToLocalStorage();
+            updateCycleCounter();
+        }
+
+        function deleteCycle(button) {
+            const li = button.parentElement;
+            historyList.removeChild(li);
+            saveHistoryToLocalStorage();
+            updateCycleCounter();
+        }
+
+        function clearAllHistory() {
+            if (confirm("¿Estás seguro de que deseas eliminar todo el historial de ciclos?")) {
+                historyList.innerHTML = "";
+                localStorage.removeItem("cycleHistory");
+                updateCycleCounter();
+            }
+        }
+
+        function saveHistoryToLocalStorage() {
+            const historyItems = Array.from(historyList.children).map(li => li.innerHTML);
+            localStorage.setItem("cycleHistory", JSON.stringify(historyItems));
+        }
+
+        function loadHistoryFromLocalStorage() {
+            const savedHistory = JSON.parse(localStorage.getItem("cycleHistory"));
+            if (savedHistory) {
+                historyList.innerHTML = "";
+                savedHistory.forEach(itemHTML => {
+                    const li = document.createElement("li");
+                    li.classList.add("history-item");
+                    li.innerHTML = itemHTML;
+                    historyList.appendChild(li);
+                });
+            }
+            updateCycleCounter();
+        }
+
+        function resetTimer() {
+            clearInterval(timerInterval);
+            timerInterval = null;
+            isPaused = false;
+            isWorkPhase = true;
+            timeLeft = parseInt(workDurationInput.value) * 60;
+            timerDisplay.style.color = '';
+            document.title = "Flow Timer"; // Restaurar título original
+            updateDisplay();
+        }
+        function exportToCSV() {
+            const cycles = Array.from(historyList.children).map(li => {
+                // Obtener el texto sin el botón de eliminar
+                const text = li.textContent.trim();
+                // Extraer los datos usando expresiones regulares
+                const matches = text.match(/(.*?)\((.*?)\): Flujo (\d+) min, Pausa (\d+) min/);
+                if (matches) {
+                    const [, descripcion, fecha, flujo, pausa] = matches;
+                    return {
+                        descripcion: descripcion.trim(),
+                        fecha: fecha.trim(),
+                        flujo_minutos: flujo,
+                        pausa_minutos: pausa
+                    };
+                }
+                return null;
+            }).filter(cycle => cycle !== null);
+
+            if (cycles.length === 0) {
+                alert("No hay ciclos para exportar");
+                return;
+            }
+
+            // Crear el contenido del CSV
+            const headers = ["Descripción", "Fecha", "Flujo (min)", "Pausa (min)"];
+            const csvContent = [
+                headers.join(","),
+                ...cycles.map(cycle => [
+                    `"${cycle.descripcion}"`,
+                    `"${cycle.fecha}"`,
+                    cycle.flujo_minutos,
+                    cycle.pausa_minutos
+                ].join(","))
+            ].join("\n");
+
+            // Crear el blob y descargar
+            const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", `flow_timer_export_${new Date().toISOString().slice(0,10)}.csv`);
+            link.style.display = "none";
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        clearAllBtn.addEventListener("click", clearAllHistory);
+        resetBtn.addEventListener("click", resetTimer);
+
+        pauseBtn.addEventListener("click", () => {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+                isPaused = true;
+            } else {
+                startTimer();
+            }
+        });
+
+        extendBtn.addEventListener("click", () => {
+            timeLeft += 5 * 60;
+            updateDisplay();
+        });
+
+        startBtn.addEventListener("click", () => {
+            if (!timerInterval) {
+                if (!isWorkPhase && timeLeft === 0) {
+                    isWorkPhase = true;
+                    timeLeft = parseInt(workDurationInput.value) * 60;
+                    timerDisplay.style.color = '';
+                }
+                startTimer();
+            }
+        });
+
+        exportBtn.addEventListener("click", exportToCSV);
+
+        updateDisplay();
+        loadHistoryFromLocalStorage();
+    </script>
+</body>
+</html>
