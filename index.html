@@ -607,21 +607,43 @@ function clearAllHistory() {
 }
 
 function exportToCSV() {
-    const cycles = Array.from(historyList.children).map(li => {
-        const text = li.textContent.trim();
-        // Nueva expresión regular que captura el nombre y la fecha/hora completa
-        const matches = text.match(/(.*?)\(([\d/]+ [\d:]+)\): Flujo (\d+) min, Pausa (\d+) min/);
+    const listItems = Array.from(historyList.children);
+    
+    const cycles = listItems.map(li => {
+        // Remover el botón de eliminar del texto
+        const textContent = li.textContent.replace('🗑️', '').trim();
+        
+        // Expresión regular ajustada al formato exacto del historial
+        const regex = /(.*?)\s*\((\d{1,2}\/\d{1,2}\/\d{4}\s+\d{2}:\d{2}:\d{2})\):\s*Flujo\s+(\d+)\s+min,\s*Pausa\s+(\d+)\s+min/;
+        const matches = textContent.match(regex);
+        
         if (matches) {
             const [, descripcion, fechaHora, flujo, pausa] = matches;
             return {
                 descripcion: descripcion.trim(),
-                fecha: fechaHora.trim(), // Ahora incluye la fecha y hora completas
+                fecha: fechaHora.trim(),
                 flujo_minutos: flujo,
                 pausa_minutos: pausa
             };
         }
+
+        // Si no coincide, intentar con un formato más flexible
+        const altRegex = /([^(]+)\s*\(([^)]+)\).*?Flujo\s+(\d+)\s+min.*?Pausa\s+(\d+)\s+min/;
+        const altMatches = textContent.match(altRegex);
+        
+        if (altMatches) {
+            const [, descripcion, fechaHora, flujo, pausa] = altMatches;
+            return {
+                descripcion: descripcion.trim(),
+                fecha: fechaHora.trim(),
+                flujo_minutos: flujo,
+                pausa_minutos: pausa
+            };
+        }
+
+        console.log("Registro no procesado:", textContent);
         return null;
-    }).filter(cycle => cycle !== null);
+    }).filter(Boolean);
 
     if (cycles.length === 0) {
         alert("No hay ciclos para exportar");
@@ -647,7 +669,12 @@ function exportToCSV() {
     link.style.display = "none";
     document.body.appendChild(link);
     link.click();
-    document.body.removeChild(link);
+    
+    // Limpiar
+    setTimeout(() => {
+        URL.revokeObjectURL(url);
+        document.body.removeChild(link);
+    }, 100);
 }
 
 clearAllBtn.addEventListener("click", clearAllHistory);
