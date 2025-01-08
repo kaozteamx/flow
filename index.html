@@ -609,28 +609,28 @@ function clearAllHistory() {
 function exportToCSV() {
     const cycles = Array.from(historyList.children).map(li => {
         const text = li.textContent.trim();
-        const matches = text.match(/(.*?)\((.*?)\): Flujo (\d+) min, Pausa (\d+) min/);
+        // Nueva expresión regular que captura el nombre y la fecha/hora completa
+        const matches = text.match(/(.*?)\(([\d/]+ [\d:]+)\): Flujo (\d+) min, Pausa (\d+) min/);
         if (matches) {
-            const [, descripcion, fecha, flujo, pausa] = matches;
+            const [, descripcion, fechaHora, flujo, pausa] = matches;
             return {
                 descripcion: descripcion.trim(),
-                fecha: fecha.trim(),
+                fecha: fechaHora.trim(), // Ahora incluye la fecha y hora completas
                 flujo_minutos: flujo,
                 pausa_minutos: pausa
             };
         }
         return null;
-    }).filter(cycle => cycle !== null); // Filtrar solo los ciclos válidos
+    }).filter(cycle => cycle !== null);
 
     if (cycles.length === 0) {
         alert("No hay ciclos para exportar");
         return;
     }
 
-    // Encabezados y contenido CSV
-    const headers = ["Descripción", "Fecha", "Flujo (min)", "Pausa (min)"];
+    const headers = ["Descripción", "Fecha y Hora", "Flujo (min)", "Pausa (min)"];
     const csvContent = [
-        headers.join(","), // Encabezados
+        headers.join(","),
         ...cycles.map(cycle => [
             `"${cycle.descripcion}"`,
             `"${cycle.fecha}"`,
@@ -639,7 +639,6 @@ function exportToCSV() {
         ].join(","))
     ].join("\n");
 
-    // Crear archivo CSV y descargar
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
