@@ -620,16 +620,17 @@ function exportToCSV() {
             };
         }
         return null;
-    }).filter(cycle => cycle !== null);
+    }).filter(cycle => cycle !== null); // Filtrar solo los ciclos válidos
 
     if (cycles.length === 0) {
         alert("No hay ciclos para exportar");
         return;
     }
 
+    // Encabezados y contenido CSV
     const headers = ["Descripción", "Fecha", "Flujo (min)", "Pausa (min)"];
     const csvContent = [
-        headers.join(","),
+        headers.join(","), // Encabezados
         ...cycles.map(cycle => [
             `"${cycle.descripcion}"`,
             `"${cycle.fecha}"`,
@@ -638,6 +639,7 @@ function exportToCSV() {
         ].join(","))
     ].join("\n");
 
+    // Crear archivo CSV y descargar
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
@@ -688,4 +690,3 @@ loadHistoryFromLocalStorage();
 </script>
 </body>
 </html>
-
